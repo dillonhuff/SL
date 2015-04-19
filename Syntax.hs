@@ -1,11 +1,12 @@
 module Syntax(Program,
               getDecls,
               Decl,
+              func,
               isMain,
               getFuncBody,
+              getFuncName,
               Expr,
               ExprType(..),
-              Lit,
               exprType,
               getFunctionName,
               getFunctionArgs,
@@ -17,7 +18,13 @@ module Syntax(Program,
               getIfExpr,
               getElseExpr,
               getName,
-              getPrintExpr) where
+              getPrintExpr,
+              Lit,
+              LitType(..),
+              literalType,
+              strLit,
+              intLit,
+              getInt) where
 
 data Program = Program [Decl]
                deriving (Eq, Ord, Show)
@@ -27,9 +34,12 @@ getDecls (Program ds) = ds
 data Decl = Func String [FormalParam] Expr
             deriving (Eq, Ord, Show)
 
+func n ps expr = Func n ps expr
+
 isMain (Func "main" _ _) = True
 isMain _ = False
 
+getFuncName (Func n _ _) = n
 getFuncBody (Func _ _ b) = b
 
 data FormalParam = FormalParam Type String
@@ -46,6 +56,9 @@ data Expr
 
 exprType (Literal _) = LITERAL
 exprType (BOp _ _ _) = BINOP
+
+strLit s = Literal $ StringLit s
+intLit i = Literal $ IntLit i
 
 getFunctionName (Funcall n _) = n
 getFunctionArgs (Funcall _ a) = a
@@ -71,6 +84,16 @@ data ExprType
 data Lit
   = StringLit String
   | IntLit Int
+    deriving (Eq, Ord, Show)
+
+literalType (StringLit _) = STRINGLIT
+literalType (IntLit _) = INTLIT
+
+getInt (IntLit i) = i
+
+data LitType
+  = STRINGLIT
+  | INTLIT
     deriving (Eq, Ord, Show)
 
 data Binop
