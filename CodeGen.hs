@@ -92,7 +92,7 @@ freshStackLoc = do
 
 prettyPrintCode :: CodeGenState -> String
 prettyPrintCode (CodeGenState n ss v instrs dataSegItems) =
-  ".text\n.globl _" ++ n ++ "\n_" ++ n ++ ":\n" ++ (showInstrs $ reverse instrs)  ++ "\n\n.data\n" ++ (L.concat $ L.intersperse "\n" $ L.map show $ dataSegItems) ++ "\n"
+  ".text\n.globl _" ++ n ++ "\n_" ++ n ++ ":" ++ (showInstrs $ reverse instrs)  ++ "\n\n.data\n" ++ (L.concat $ L.intersperse "\n" $ L.map show $ dataSegItems) ++ "\n"
 
 startingCodeGenState :: Decl -> CodeGenState
 startingCodeGenState decl = CodeGenState (getFuncName decl) 8 0 [] []
