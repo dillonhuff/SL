@@ -8,26 +8,6 @@ import Control.Monad.State
 import ISAx8664
 import Syntax
 
-{-genProgramCode program =
-  L.concat $ L.intersperse "\n" $ L.map genDeclCode $ getDecls program
-
-genDeclCode decl =
-  case isMain decl of
-    True -> genMainDeclCode decl
-    False -> error $ "non main decl code not implemented"
-
-genMainDeclCode decl =
-  (mainPrelude stkSize) ++ instrs ++ mainConclusion ++ dataSeg
-  where
-    codeGenS = execState (genExprCode $ getFuncBody decl) (startingCodeGenState decl)
-    instrs = showInstrs $ instructions codeGenS
-    dataSeg = ".data\n" ++ (L.concat $ L.intersperse "\n" $ L.map show $ dataItems codeGenS)
-    stkSize = stackSize codeGenS-}
-
-mainPrelude stkSize = ".text\n.globl _main\n" ++ showInstrs [subqIR stkSize RSP]
-
-mainConclusion = showInstrs [movqIR 0 RDI, call "_exit"]
-
 runGenDeclCode :: Decl -> CodeGenState
 runGenDeclCode decl =
   let bodyCode = execState (genExprCode $ getFuncBody decl) (startingCodeGenState decl) in
@@ -35,8 +15,14 @@ runGenDeclCode decl =
 
 appendPrelude decl cgs =
   case isMain decl of
-    True -> addInstrToStart (subqIR (stackSize cgs) RSP) cgs
+    True -> addInstrToStart (subqIR (adjustTo16ByteAligned $ stackSize cgs) RSP) cgs
     False -> error "append prelude not implemented for non-main functions"
+
+adjustTo16ByteAligned :: Int -> Int
+adjustTo16ByteAligned stkSize =
+  case (mod stkSize 16) == 8 of
+    True -> stkSize
+    False -> stkSize + 8
 
 appendConclusion decl cgs =
   case isMain decl of
@@ -65,7 +51,15 @@ addStringConstant s (CodeGenState n ss v is ds) =
   (getStringConstantName newStrConst, CodeGenState n ss (v+1) is (newStrConst:ds))
   where
     newStrConst = stringConstant v s
-    
+
+nextLabel :: CodeGenState -> (String, CodeGenState)
+nextLabel (CodeGenState n ss v is ds) =
+  ("label_" ++ show v, CodeGenState n ss (v+1) is ds)
+
+nextSP :: CodeGenState -> (Int, CodeGenState)
+nextSP (CodeGenState n ss v is ds) =
+  (ss, CodeGenState n (ss+8) v is ds)
+
 instr :: Instruction -> State CodeGenState ()
 instr ir = do
   st <- get
@@ -79,6 +73,22 @@ freshStringConstant str = do
     do
       put resSt
       return strConstName
+
+freshLabel :: State CodeGenState String
+freshLabel = do
+  st <- get
+  let (newLabel, resSt) = nextLabel st in
+    do
+      put resSt
+      return newLabel
+
+freshStackLoc :: State CodeGenState Int
+freshStackLoc = do
+  st <- get
+  let (newStackLoc, resSt) = nextSP st in
+    do
+      put resSt
+      return $ (-1) * newStackLoc
 
 prettyPrintCode :: CodeGenState -> String
 prettyPrintCode (CodeGenState n ss v instrs dataSegItems) =
@@ -111,9 +121,39 @@ genStringLitCode s = do
   l <- freshStringConstant s
   instr $ leaqLOR l RIP RAX
 
-genBinopCode b l r = error "genBinopCode not implemented"
+genBinopCode b l r = do
+  genExprCode l
+  lResSaveLoc <- genRegSaveCode RAX
+  genExprCode r
+  instr $ movqIOR lResSaveLoc RBP RDX
+  genBOpCode b RDX RAX
 
-genITECode t i e = error "genITECode not implemented"
+genRegSaveCode r = do
+  nextStackLoc <- freshStackLoc
+  instr $ movqRIO r nextStackLoc RBP
+  return nextStackLoc
+
+genBOpCode b l r =
+  case binopType b of
+    INTGEQ -> do
+      instr $ subqRR l r
+      instr $ shrqIR 63 r
+
+genITECode t i e = do
+  l1 <- genBoolTestCode t
+  genExprCode i
+  l2 <- freshLabel
+  instr $ jmp l2
+  instr $ labelInstr l1
+  genExprCode e
+  instr $ labelInstr l2
+
+genBoolTestCode e = do
+  genExprCode e
+  l1 <- freshLabel
+  instr $ subqIR 1 RAX
+  instr $ js l1
+  return l1
 
 genNameCode n = error "genNameCode not implemented"
 
