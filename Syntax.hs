@@ -1,4 +1,5 @@
-module Syntax(Program,
+module Syntax(Module,
+              slModule,
               getDecls,
               Decl,
               func,
@@ -33,10 +34,12 @@ module Syntax(Program,
               binopType,
               BinopType(..)) where
 
-data Program = Program [Decl]
+data Module = Module [Decl]
                deriving (Eq, Ord, Show)
 
-getDecls (Program ds) = ds
+slModule ds = Module ds
+
+getDecls (Module ds) = ds
 
 data Decl = Func String [String] Expr
             deriving (Eq, Ord, Show)

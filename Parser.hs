@@ -1,5 +1,6 @@
 module Parser(parseExpr,
-              parseFunc) where
+              parseFunc,
+              parseModule) where
 
 import Data.List as L
 import Text.Parsec.Expr
@@ -9,6 +10,12 @@ import Text.Parsec.Prim
 
 import Syntax
 import Token
+
+parseModule :: String -> [Token] -> Either String Module
+parseModule srcFileName toks =
+  case parse pModule srcFileName toks of
+    Left err -> Left $ show err
+    Right mod -> Right mod
 
 parseFunc :: String -> [Token] -> Either String Decl
 parseFunc srcFileName toks =
@@ -21,6 +28,10 @@ parseExpr srcFileName toks =
   case parse pExpr srcFileName toks of
     Left err -> Left $ show err
     Right expr -> Right expr
+
+pModule = do
+  decls <- many pFunc
+  return $ slModule decls
 
 pFunc = do
   pResNameTok "func"

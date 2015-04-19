@@ -1,15 +1,25 @@
 module Main(main) where
 
 import CodeGen
+import Lexer
+import Parser
 import Syntax
 
-main =
-  let asmCode = runGenDeclCode iteProg in
-  writeFile asmFile (prettyPrintCode asmCode)
+main = do
+  srcCode <- readFile srcFile
+  compileModule srcFile srcCode
 
 tinyMainDeclInt = func "main" [] $ intLit 12
 tinyMainDeclStr = func "main" [] $ strLit "Hello, world!\n"
 helloWorldProg = func "main" [] $ printExpr $ strLit "Hello, world!\n"
 iteProg = func "main" [] $ iteExpr (intGEQ (-122) (-1000)) (printExpr $ strLit "If expression\n") (printExpr $ strLit "Else expression\n")
 
-asmFile = "testCodeGen.s"
+srcFile = "PrintMain.sl"
+asmFile = "PrintMain.s"
+
+lexAndParseModule fileName s = (lexString fileName s) >>= (parseModule fileName)
+
+compileModule fileName srcCode =
+  case lexAndParseModule fileName srcCode of
+    Left err -> putStrLn err
+    Right moduleAst -> writeFile asmFile (moduleAsm moduleAst)

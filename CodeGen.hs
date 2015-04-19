@@ -1,4 +1,5 @@
 module CodeGen(runGenDeclCode,
+               moduleAsm,
                prettyPrintCode) where
 
 import Data.List as L
@@ -7,6 +8,10 @@ import Control.Monad.State
 
 import ISAx8664
 import Syntax
+
+moduleAsm :: Module -> String
+moduleAsm mod =
+  L.concatMap (prettyPrintCode . runGenDeclCode) $ getDecls mod
 
 runGenDeclCode :: Decl -> CodeGenState
 runGenDeclCode decl =
