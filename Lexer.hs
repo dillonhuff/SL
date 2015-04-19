@@ -25,6 +25,9 @@ lexer = Tok.makeTokenParser languageDef
 pTok :: Parser Token
 pTok = pVarOrRes
      <|> pDelim
+     <|> pBuiltinOp
+     <|> pIntLiteral
+     <|> pStringLiteral
 
 pVarOrRes :: Parser Token
 pVarOrRes = (try pIdentifier) <|> pResWord
@@ -55,3 +58,25 @@ pDelim = do
            <|> string ")"
            <|> string ","
   return $ delim pos delimStr
+
+pBuiltinOp = do
+  pos <- getPosition
+  opStr <- string ">="
+        <|> string "+"
+        <|> string "-"
+        <|> string "*"
+  return $ builtin pos opStr
+
+pIntLiteral = do
+  pos <- getPosition
+  num <- pInteger
+  return $ intLit pos num
+
+pInteger = Tok.integer lexer
+
+pStringLiteral = do
+  pos <- getPosition
+  str <- pString
+  return $ stringLit pos str
+
+pString = Tok.stringLiteral lexer
