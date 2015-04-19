@@ -1,5 +1,9 @@
 module Token(Token,
              dres,
+             ddelim,
+             dident,
+             delim,
+             ident,
              res) where
 
 import Text.Parsec.Pos
@@ -13,10 +17,15 @@ instance Eq Token where
 
 data TokenValue
   = Resword String
+  | Identifier String
     deriving (Eq, Ord, Show)
 
 res p n = Token p (Resword n)
+ident p n = Token p (Identifier n)
+delim p n = Token p (Resword n)
 
 dres n = Token dPos (Resword n)
+ddelim n = Token dPos (Resword n)
+dident n = Token dPos (Identifier n)
 
 dPos = newPos "DUMMY" 0 0
