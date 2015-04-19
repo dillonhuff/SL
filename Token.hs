@@ -1,4 +1,6 @@
 module Token(Token,
+             reservedTokName,
+             pos,
              dres,
              dbuiltin,
              ddelim,
@@ -10,7 +12,11 @@ module Token(Token,
              builtin,
              intLit,
              stringLit,
-             res) where
+             getStringLitValue,
+             getIntLitValue,
+             res,
+             TokenType(..),
+             tokenType) where
 
 import Text.Parsec.Pos
 
@@ -21,12 +27,28 @@ data Token
 instance Eq Token where
   (==) (Token _ l) (Token _ r) = l == r
 
+tokenType (Token _ (Resword _)) = RESERVED
+tokenType (Token _ (StringLit _)) = STRINGLITERAL
+
 data TokenValue
   = Resword String
   | Identifier String
   | IntLit Integer
   | StringLit String
     deriving (Eq, Ord, Show)
+
+data TokenType
+  = STRINGLITERAL
+  | INTEGERLITERAL
+  | IDENTIFIER
+  | RESERVED
+    deriving (Eq, Ord, Show)
+
+reservedTokName (Token _ (Resword n)) = n
+getStringLitValue (Token _ (StringLit s)) = s
+getIntLitValue (Token _ (IntLit i)) = i
+
+pos (Token p _) = p
 
 res p n = Token p (Resword n)
 builtin p n = Token p (Resword n)
