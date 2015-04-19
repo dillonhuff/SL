@@ -23,7 +23,7 @@ appendPrelude decl cgs =
     True -> addInstrToStart (subqIR (adjustTo16ByteAligned $ stackSize cgs) RSP) cgs
     False -> error "append prelude not implemented for non-main functions"
 
-adjustTo16ByteAligned :: Int -> Int
+adjustTo16ByteAligned :: Integer -> Integer
 adjustTo16ByteAligned stkSize =
   case (mod stkSize 16) == 8 of
     True -> stkSize
@@ -37,8 +37,8 @@ appendConclusion decl cgs =
 data CodeGenState
   = CodeGenState {
     funcName :: String,
-    stackSize :: Int,
-    nextInt :: Int,
+    stackSize :: Integer,
+    nextInt :: Integer,
     instructions :: [Instruction],
     dataItems :: [DataItem]
     } deriving (Eq, Ord, Show)
@@ -61,7 +61,7 @@ nextLabel :: CodeGenState -> (String, CodeGenState)
 nextLabel (CodeGenState n ss v is ds) =
   ("label_" ++ show v, CodeGenState n ss (v+1) is ds)
 
-nextSP :: CodeGenState -> (Int, CodeGenState)
+nextSP :: CodeGenState -> (Integer, CodeGenState)
 nextSP (CodeGenState n ss v is ds) =
   (ss, CodeGenState n (ss+8) v is ds)
 
@@ -87,7 +87,7 @@ freshLabel = do
       put resSt
       return newLabel
 
-freshStackLoc :: State CodeGenState Int
+freshStackLoc :: State CodeGenState Integer
 freshStackLoc = do
   st <- get
   let (newStackLoc, resSt) = nextSP st in
@@ -118,7 +118,7 @@ genLiteralCode l =
     INTLIT -> genIntLitCode $ getInt l
     STRINGLIT -> genStringLitCode $ getString l
 
-genIntLitCode :: Int -> State CodeGenState ()
+genIntLitCode :: Integer -> State CodeGenState ()
 genIntLitCode i = instr $ movqIR i RAX
 
 genStringLitCode :: String -> State CodeGenState ()

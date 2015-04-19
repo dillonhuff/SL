@@ -19,7 +19,9 @@ exprCases =
   [("\"The quick brown fox jumped over the lazy dog.\"",
     strLit "The quick brown fox jumped over the lazy dog."),
    ("print \"hello\"",
-    printExpr $ strLit "hello")]
+    printExpr $ strLit "hello"),
+   ("if 123 >= 15 then print \"Worked out man\" else print \"!(123 >= 15) ?\"",
+    iteExpr (intGEQ 123 15) (printExpr $ strLit "Worked out man") (printExpr $ strLit "!(123 >= 15) ?"))]
 
 funcCases =
   L.map (\(x, y) -> (x, Right y))

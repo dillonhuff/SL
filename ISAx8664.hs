@@ -64,7 +64,7 @@ showInstrs instrs = L.concat $ L.intersperse "\n" $ ("\t" : (L.map show instrs))
 data MVal
   = Register Reg
   | Deref Offset Reg
-  | Immediate Int
+  | Immediate Integer
     deriving (Eq, Ord)
 
 instance Show MVal where
@@ -92,7 +92,7 @@ instance Show Reg where
   show AL = "%al"
 
 data Offset
-  = ImmediateOffset Int
+  = ImmediateOffset Integer
   | LabelOffset String
     deriving (Eq, Ord)
 

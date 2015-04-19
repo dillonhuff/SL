@@ -45,23 +45,48 @@ pFunc = do
 pExpr = buildExpressionParser table term
 
 table =
-  [[printOp]]
+  [[printOp],
+   [intGEQOp]]
 
 printOp = Prefix pPrintOp
+intGEQOp = Infix pIntGEQ AssocLeft
+
+pIntGEQ = do
+  pResNameTok ">="
+  return $ binopExpr iGEQ
 
 pPrintOp = do
   pResNameTok "print"
   return $ printExpr
 
 term = pStringLit
+     <|> pIntLit
+     <|> pITEExpr
 
 pStringLit = do
   position <- getPosition
   strL <- pStringLitTok
   return $ strLit $ getStringLitValue strL
 
+pIntLit = do
+  position <- getPosition
+  intL <- pIntLitTok
+  return $ Syntax.intLit $ getIntLitValue intL
+
+pITEExpr = do
+  pResNameTok "if"
+  testE <- pExpr
+  pResNameTok "then"
+  ifE <- pExpr
+  pResNameTok "else"
+  elseE <- pExpr
+  return $ iteExpr testE ifE elseE
+
 pStringLitTok :: (Monad m) => ParsecT [Token] u m Token
 pStringLitTok = slTok (\t -> tokenType t == STRINGLITERAL)
+
+pIntLitTok :: (Monad m) => ParsecT [Token] u m Token
+pIntLitTok = slTok (\t -> tokenType t == INTEGERLITERAL)
 
 pIdentTok :: (Monad m) => ParsecT [Token] u m Token
 pIdentTok = slTok (\t -> tokenType t == IDENTIFIER)

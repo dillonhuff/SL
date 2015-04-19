@@ -10,6 +10,7 @@ module Syntax(Module,
               printExpr,
               intGEQ,
               iteExpr,
+              binopExpr,
               ExprType(..),
               exprType,
               getFunctionName,
@@ -32,6 +33,7 @@ module Syntax(Module,
               getString,
               Binop,
               binopType,
+              iGEQ,
               BinopType(..)) where
 
 data Module = Module [Decl]
@@ -66,6 +68,7 @@ exprType (BOp _ _ _) = BINOP
 exprType (Print _) = PRINT
 exprType (Ite _ _ _) = ITE
 
+binopExpr op l r = BOp op l r
 iteExpr t i e = Ite t i e
 intGEQ l r = BOp IntGEQ (intLit l) (intLit r)
 strLit s = Literal $ StringLit s
@@ -95,7 +98,7 @@ data ExprType
 
 data Lit
   = StringLit String
-  | IntLit Int
+  | IntLit Integer
     deriving (Eq, Ord, Show)
 
 literalType (StringLit _) = STRINGLIT
@@ -117,6 +120,8 @@ data Binop
     deriving (Eq, Ord, Show)
 
 binopType IntGEQ = INTGEQ
+
+iGEQ = IntGEQ
 
 data BinopType
   = INTGEQ

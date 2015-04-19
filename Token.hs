@@ -31,6 +31,7 @@ instance Eq Token where
 tokenType (Token _ (Resword _)) = RESERVED
 tokenType (Token _ (StringLit _)) = STRINGLITERAL
 tokenType (Token _ (Identifier _)) = IDENTIFIER
+tokenType (Token _ (IntLit _)) = INTEGERLITERAL
 
 data TokenValue
   = Resword String
