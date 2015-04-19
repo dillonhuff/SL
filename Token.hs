@@ -1,5 +1,6 @@
 module Token(Token,
              reservedTokName,
+             identTokName,
              pos,
              dres,
              dbuiltin,
@@ -29,6 +30,7 @@ instance Eq Token where
 
 tokenType (Token _ (Resword _)) = RESERVED
 tokenType (Token _ (StringLit _)) = STRINGLITERAL
+tokenType (Token _ (Identifier _)) = IDENTIFIER
 
 data TokenValue
   = Resword String
@@ -45,6 +47,7 @@ data TokenType
     deriving (Eq, Ord, Show)
 
 reservedTokName (Token _ (Resword n)) = n
+identTokName (Token _ (Identifier n)) = n
 getStringLitValue (Token _ (StringLit s)) = s
 getIntLitValue (Token _ (IntLit i)) = i
 

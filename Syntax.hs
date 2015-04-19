@@ -38,7 +38,7 @@ data Program = Program [Decl]
 
 getDecls (Program ds) = ds
 
-data Decl = Func String [FormalParam] Expr
+data Decl = Func String [String] Expr
             deriving (Eq, Ord, Show)
 
 func n ps expr = Func n ps expr
@@ -48,9 +48,6 @@ isMain _ = False
 
 getFuncName (Func n _ _) = n
 getFuncBody (Func _ _ b) = b
-
-data FormalParam = FormalParam Type String
-                   deriving (Eq, Ord, Show)
 
 data Expr
   = Literal Lit

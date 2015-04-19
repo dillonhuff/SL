@@ -9,8 +9,10 @@ import TestUtils
 
 allParserTests = do
   testFunction lexAndParseExpr exprCases
+  testFunction lexAndParseFunc funcCases
 
 lexAndParseExpr s = (lexString "noFile.sl" s) >>= (parseExpr "noFile.sl")
+lexAndParseFunc s = (lexString "noFile.sl" s) >>= (parseFunc "noFile.sl")
 
 exprCases =
   L.map (\(x, y) -> (x, Right y))
@@ -18,3 +20,8 @@ exprCases =
     strLit "The quick brown fox jumped over the lazy dog."),
    ("print \"hello\"",
     printExpr $ strLit "hello")]
+
+funcCases =
+  L.map (\(x, y) -> (x, Right y))
+  [("func main is print \"this is a test\" end",
+    func "main" [] $ printExpr $ strLit "this is a test")]

@@ -1,5 +1,7 @@
-module Parser(parseExpr) where
+module Parser(parseExpr,
+              parseFunc) where
 
+import Data.List as L
 import Text.Parsec.Expr
 import Text.ParserCombinators.Parsec.Combinator
 import Text.Parsec.Pos
@@ -8,11 +10,26 @@ import Text.Parsec.Prim
 import Syntax
 import Token
 
+parseFunc :: String -> [Token] -> Either String Decl
+parseFunc srcFileName toks =
+  case parse pFunc srcFileName toks of
+    Left err -> Left $ show err
+    Right expr -> Right expr
+
 parseExpr :: String -> [Token] -> Either String Expr
 parseExpr srcFileName toks =
   case parse pExpr srcFileName toks of
     Left err -> Left $ show err
     Right expr -> Right expr
+
+pFunc = do
+  pResNameTok "func"
+  fName <- pIdentTok
+  args <- many pIdentTok
+  pResNameTok "is"
+  body <- pExpr
+  pResNameTok "end"
+  return $ func (identTokName fName) (L.map identTokName args) body
 
 pExpr = buildExpressionParser table term
 
@@ -22,21 +39,24 @@ table =
 printOp = Prefix pPrintOp
 
 pPrintOp = do
-  resNameTok "print"
+  pResNameTok "print"
   return $ printExpr
 
-term = pStringLitTok
+term = pStringLit
 
-pStringLitTok = do
+pStringLit = do
   position <- getPosition
-  strL <- stringLitTok
+  strL <- pStringLitTok
   return $ strLit $ getStringLitValue strL
 
-stringLitTok :: (Monad m) => ParsecT [Token] u m Token
-stringLitTok = slTok (\t -> tokenType t == STRINGLITERAL)
+pStringLitTok :: (Monad m) => ParsecT [Token] u m Token
+pStringLitTok = slTok (\t -> tokenType t == STRINGLITERAL)
 
-resNameTok :: (Monad m) => String -> ParsecT [Token] u m Token
-resNameTok name = slTok (\t -> (tokenType t == RESERVED) && (reservedTokName t == name))
+pIdentTok :: (Monad m) => ParsecT [Token] u m Token
+pIdentTok = slTok (\t -> tokenType t == IDENTIFIER)
+
+pResNameTok :: (Monad m) => String -> ParsecT [Token] u m Token
+pResNameTok name = slTok (\t -> (tokenType t == RESERVED) && (reservedTokName t == name))
 
 slTok :: (Monad m) => (Token -> Bool) -> ParsecT [Token] u m Token
 slTok condition = tokenPrim show updatePos meetsCond
