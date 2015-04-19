@@ -47,30 +47,45 @@ data CodeGenState
   = CodeGenState {
     funcName :: String,
     stackSize :: Int,
+    nextInt :: Int,
     instructions :: [Instruction],
     dataItems :: [DataItem]
     } deriving (Eq, Ord, Show)
 
 addInstr :: Instruction -> CodeGenState -> CodeGenState
-addInstr ir (CodeGenState n ss is ds) =
-  CodeGenState n ss (ir:is) ds
+addInstr ir (CodeGenState n ss v is ds) =
+  CodeGenState n ss v (ir:is) ds
 
 addInstrToStart :: Instruction -> CodeGenState -> CodeGenState
-addInstrToStart ir (CodeGenState n ss is ds) =
-  CodeGenState n ss (is ++ [ir]) ds
+addInstrToStart ir (CodeGenState n ss v is ds) =
+  CodeGenState n ss v (is ++ [ir]) ds
 
+addStringConstant :: String -> CodeGenState -> (String, CodeGenState)
+addStringConstant s (CodeGenState n ss v is ds) =
+  (getStringConstantName newStrConst, CodeGenState n ss (v+1) is (newStrConst:ds))
+  where
+    newStrConst = stringConstant v s
+    
 instr :: Instruction -> State CodeGenState ()
 instr ir = do
   st <- get
   let resSt = addInstr ir st in
     put resSt
 
+freshStringConstant :: String -> State CodeGenState String
+freshStringConstant str = do
+  st <- get
+  let (strConstName, resSt) = addStringConstant str st in
+    do
+      put resSt
+      return strConstName
+
 prettyPrintCode :: CodeGenState -> String
-prettyPrintCode (CodeGenState n ss instrs dataSegItems) =
-  ".text\n.globl _" ++ n ++ "\n_" ++ n ++ ":\n" ++ (showInstrs $ reverse instrs)  ++ "\n\n.data\n" ++ (L.concat $ L.intersperse "\n" $ L.map show $ dataSegItems)
+prettyPrintCode (CodeGenState n ss v instrs dataSegItems) =
+  ".text\n.globl _" ++ n ++ "\n_" ++ n ++ ":\n" ++ (showInstrs $ reverse instrs)  ++ "\n\n.data\n" ++ (L.concat $ L.intersperse "\n" $ L.map show $ dataSegItems) ++ "\n"
 
 startingCodeGenState :: Decl -> CodeGenState
-startingCodeGenState decl = CodeGenState (getFuncName decl) 8 [] []
+startingCodeGenState decl = CodeGenState (getFuncName decl) 8 0 [] []
 
 genExprCode :: Expr -> State CodeGenState ()
 genExprCode e =
@@ -86,10 +101,15 @@ genLiteralCode :: Lit -> State CodeGenState ()
 genLiteralCode l =
   case literalType l of
     INTLIT -> genIntLitCode $ getInt l
-    STRINGLIT -> error "stringLit not implemented"
+    STRINGLIT -> genStringLitCode $ getString l
 
 genIntLitCode :: Int -> State CodeGenState ()
 genIntLitCode i = instr $ movqIR i RAX
+
+genStringLitCode :: String -> State CodeGenState ()
+genStringLitCode s = do
+  l <- freshStringConstant s
+  instr $ leaqLOR l RIP RAX
 
 genBinopCode b l r = error "genBinopCode not implemented"
 
@@ -99,4 +119,9 @@ genNameCode n = error "genNameCode not implemented"
 
 genFuncallCode n args = error "genFuncallCode not implemented"
 
-genPrintCode e = error "genPrintCode not implemented"
+genPrintCode e = do
+  genExprCode e
+  instr $ movqRR RAX RDI
+  instr $ movbIR 0 AL
+  instr $ call "_printf"
+  instr $ movqIR 0 RAX

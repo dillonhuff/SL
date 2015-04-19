@@ -6,6 +6,7 @@ module Syntax(Program,
               getFuncBody,
               getFuncName,
               Expr,
+              printExpr,
               ExprType(..),
               exprType,
               getFunctionName,
@@ -24,7 +25,8 @@ module Syntax(Program,
               literalType,
               strLit,
               intLit,
-              getInt) where
+              getInt,
+              getString) where
 
 data Program = Program [Decl]
                deriving (Eq, Ord, Show)
@@ -56,9 +58,11 @@ data Expr
 
 exprType (Literal _) = LITERAL
 exprType (BOp _ _ _) = BINOP
+exprType (Print _) = PRINT
 
 strLit s = Literal $ StringLit s
 intLit i = Literal $ IntLit i
+printExpr e = Print e
 
 getFunctionName (Funcall n _) = n
 getFunctionArgs (Funcall _ a) = a
@@ -90,6 +94,7 @@ literalType (StringLit _) = STRINGLIT
 literalType (IntLit _) = INTLIT
 
 getInt (IntLit i) = i
+getString (StringLit s) = s
 
 data LitType
   = STRINGLIT
