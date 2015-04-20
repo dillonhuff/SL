@@ -1,6 +1,6 @@
 func main is
      if 23 >= 17
-     	then print "23 >= 17\n"
+     	then (testFunc 978 12)
 	else print "Oh horrors!\n"
 end
 

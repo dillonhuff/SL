@@ -59,10 +59,24 @@ pPrintOp = do
   pResNameTok "print"
   return $ printExpr
 
-term = pStringLit
+term = try (pParens pExpr)
+     <|> pParens pFuncall
+     <|> pStringLit
      <|> pIntLit
      <|> pITEExpr
      <|> pIdent
+
+pParens otherParser = do
+  pResNameTok "("
+  other <- otherParser
+  pResNameTok ")"
+  return other
+
+pFuncall = do
+  position <- getPosition
+  fName <- pIdentTok
+  args <- many pExpr
+  return $ funcallExpr (identTokName fName) args
 
 pIdent = do
   position <- getPosition

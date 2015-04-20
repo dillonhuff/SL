@@ -2,10 +2,12 @@ module CodeGen(runGenDeclCode,
                moduleAsm,
                prettyPrintCode) where
 
+import Data.Foldable hiding (mapM_)
 import Data.List as L
 import Data.Map as M
 import Control.Applicative
-import Control.Monad.State
+import Control.Monad
+import Control.Monad.State hiding (mapM_)
 
 import ISAx8664
 import Syntax
@@ -25,7 +27,7 @@ appendPrelude decl cgs =
     False -> stdFuncPrelude decl cgs
 
 stdFuncPrelude decl cgs =
-  addInstrToStart (enterII 0 0) $ addInstrToStart (subqIR (adjustTo16ByteAligned $ stackSize cgs) RSP) cgs
+  addInstrToStart (enterII 0 0) $ addInstrToStart (subqIR (stackSize cgs + (mod (stackSize cgs) 16)) RSP) cgs
 
 adjustTo16ByteAligned :: Integer -> Integer
 adjustTo16ByteAligned stkSize =
@@ -36,7 +38,7 @@ adjustTo16ByteAligned stkSize =
 appendConclusion decl cgs =
   case isMain decl of
     True -> addInstr (call "_exit") $ addInstr (movqIR 0 RDI) cgs
-    False -> addInstr leave $ addInstr ret cgs
+    False -> addInstr ret $ addInstr leave cgs
 
 data CodeGenState
   = CodeGenState {
@@ -183,9 +185,25 @@ genBoolTestCode e = do
 
 genNameCode n = do
   off <- getStackOffset n
-  instr $ movqIOR off RSP RAX
+  instr $ movqIOR off RBP RAX
 
-genFuncallCode n args = error "genFuncallCode not implemented"
+computeArgRes :: Expr -> [Integer] -> State CodeGenState [Integer]
+computeArgRes e offs = do
+  genExprCode e
+  resStoreLoc <- freshStackLoc
+  instr $ movqRIO RAX resStoreLoc RSP
+  return $ resStoreLoc : offs
+
+genPushArgCode :: Integer -> State CodeGenState ()
+genPushArgCode off = do
+  instr $ movqIOR off RSP RAX
+  l <- freshStackLoc
+  instr $ pushq RAX
+
+genFuncallCode n args = do
+  argResOffsets <- foldrM computeArgRes [] args
+  mapM_ genPushArgCode $ L.reverse argResOffsets
+  instr $ call $ "_" ++ n
 
 genPrintCode e = do
   genExprCode e

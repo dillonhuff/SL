@@ -15,6 +15,7 @@ module ISAx8664(Instruction,
                 subqRR,
                 shrqIR,
                 leaqLOR,
+                pushq,
                 js,
                 jmp,
                 labelInstr,
@@ -30,6 +31,7 @@ data Instruction
   | Subq MVal MVal
   | Leaq MVal MVal
   | Shrq MVal MVal
+  | Pushq Reg
   | Call String
   | Js String
   | Jmp String
@@ -46,6 +48,7 @@ instance Show Instruction where
   show (Subq l r) = "\tsubq\t" ++ show l ++ ", " ++ show r
   show (Leaq l r) = "\tleaq\t" ++ show l ++ ", " ++ show r
   show (Shrq l r) = "\tshrq\t" ++ show l ++ ", " ++ show r
+  show (Pushq r) = "\tpushq\t" ++ show r
   show (Call str) = "\tcall\t" ++ str
   show (Js str) = "\tjs\t" ++ str
   show (Jmp str) = "\tjmp\t" ++ str
@@ -56,6 +59,7 @@ instance Show Instruction where
 leave = Leave
 ret = Ret
 call str = Call str
+pushq r = Pushq r
 enterII il ir = Enter (Immediate il) (Immediate ir)
 movbIR imm r = Movb (Immediate imm) (Register r)
 movqIR imm r = Movq (Immediate imm) (Register r)

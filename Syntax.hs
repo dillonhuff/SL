@@ -8,6 +8,7 @@ module Syntax(Module,
               getFuncBody,
               getFuncName,
               Expr,
+              funcallExpr,
               printExpr,
               nameExpr,
               intGEQ,
@@ -71,7 +72,9 @@ exprType (BOp _ _ _) = BINOP
 exprType (Print _) = PRINT
 exprType (Ite _ _ _) = ITE
 exprType (Name _) = NAME
+exprType (Funcall _ _) = FUNCALL
 
+funcallExpr n args = Funcall n args
 nameExpr n = Name n
 binopExpr op l r = BOp op l r
 iteExpr t i e = Ite t i e

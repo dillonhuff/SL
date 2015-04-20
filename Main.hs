@@ -14,8 +14,8 @@ tinyMainDeclStr = func "main" [] $ strLit "Hello, world!\n"
 helloWorldProg = func "main" [] $ printExpr $ strLit "Hello, world!\n"
 iteProg = func "main" [] $ iteExpr (intGEQ (-122) (-1000)) (printExpr $ strLit "If expression\n") (printExpr $ strLit "Else expression\n")
 
-srcFile = "TwoFuncModule.sl"
-asmFile = "TwoFuncModule.s"
+srcFile = "MultiFuncProgram.sl"
+asmFile = "MultiFuncProgram.s"
 
 lexAndParseModule fileName s = (lexString fileName s) >>= (parseModule fileName)
 
