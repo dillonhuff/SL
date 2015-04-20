@@ -4,10 +4,12 @@ module Syntax(Module,
               Decl,
               func,
               isMain,
+              getFuncArgs,
               getFuncBody,
               getFuncName,
               Expr,
               printExpr,
+              nameExpr,
               intGEQ,
               iteExpr,
               binopExpr,
@@ -53,6 +55,7 @@ isMain _ = False
 
 getFuncName (Func n _ _) = n
 getFuncBody (Func _ _ b) = b
+getFuncArgs (Func _ args _) = args
 
 data Expr
   = Literal Lit
@@ -67,7 +70,9 @@ exprType (Literal _) = LITERAL
 exprType (BOp _ _ _) = BINOP
 exprType (Print _) = PRINT
 exprType (Ite _ _ _) = ITE
+exprType (Name _) = NAME
 
+nameExpr n = Name n
 binopExpr op l r = BOp op l r
 iteExpr t i e = Ite t i e
 intGEQ l r = BOp IntGEQ (intLit l) (intLit r)

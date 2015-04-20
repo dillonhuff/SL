@@ -62,6 +62,12 @@ pPrintOp = do
 term = pStringLit
      <|> pIntLit
      <|> pITEExpr
+     <|> pIdent
+
+pIdent = do
+  position <- getPosition
+  idT <- pIdentTok
+  return $ nameExpr $ identTokName idT
 
 pStringLit = do
   position <- getPosition

@@ -21,7 +21,8 @@ exprCases =
    ("print \"hello\"",
     printExpr $ strLit "hello"),
    ("if 123 >= 15 then print \"Worked out man\" else print \"!(123 >= 15) ?\"",
-    iteExpr (intGEQ 123 15) (printExpr $ strLit "Worked out man") (printExpr $ strLit "!(123 >= 15) ?"))]
+    iteExpr (intGEQ 123 15) (printExpr $ strLit "Worked out man") (printExpr $ strLit "!(123 >= 15) ?")),
+   ("a", nameExpr "a")]
 
 funcCases =
   L.map (\(x, y) -> (x, Right y))

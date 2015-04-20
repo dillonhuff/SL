@@ -3,6 +3,7 @@ module CodeGen(runGenDeclCode,
                prettyPrintCode) where
 
 import Data.List as L
+import Data.Map as M
 import Control.Applicative
 import Control.Monad.State
 
@@ -21,7 +22,10 @@ runGenDeclCode decl =
 appendPrelude decl cgs =
   case isMain decl of
     True -> addInstrToStart (subqIR (adjustTo16ByteAligned $ stackSize cgs) RSP) cgs
-    False -> error "append prelude not implemented for non-main functions"
+    False -> stdFuncPrelude decl cgs
+
+stdFuncPrelude decl cgs =
+  addInstrToStart (enterII 0 0) $ addInstrToStart (subqIR (adjustTo16ByteAligned $ stackSize cgs) RSP) cgs
 
 adjustTo16ByteAligned :: Integer -> Integer
 adjustTo16ByteAligned stkSize =
@@ -32,7 +36,7 @@ adjustTo16ByteAligned stkSize =
 appendConclusion decl cgs =
   case isMain decl of
     True -> addInstr (call "_exit") $ addInstr (movqIR 0 RDI) cgs
-    False -> error "addConclusion not yet implemented for non-main functions"
+    False -> addInstr leave $ addInstr ret cgs
 
 data CodeGenState
   = CodeGenState {
@@ -40,30 +44,42 @@ data CodeGenState
     stackSize :: Integer,
     nextInt :: Integer,
     instructions :: [Instruction],
-    dataItems :: [DataItem]
+    dataItems :: [DataItem],
+    stackOffsets :: Map String Integer
     } deriving (Eq, Ord, Show)
 
+stackOffset :: String -> CodeGenState -> Integer
+stackOffset n cgs@(CodeGenState _ _ _ _ _ so) =
+  case M.lookup n so of
+    Just offset -> offset
+    Nothing -> error $ "variable " ++ show n ++ " does not exist in CodeGenState " ++ show cgs
+
+getStackOffset :: String -> State CodeGenState Integer
+getStackOffset n = do
+  st <- get
+  return $ stackOffset n st
+
 addInstr :: Instruction -> CodeGenState -> CodeGenState
-addInstr ir (CodeGenState n ss v is ds) =
-  CodeGenState n ss v (ir:is) ds
+addInstr ir (CodeGenState n ss v is ds so) =
+  CodeGenState n ss v (ir:is) ds so
 
 addInstrToStart :: Instruction -> CodeGenState -> CodeGenState
-addInstrToStart ir (CodeGenState n ss v is ds) =
-  CodeGenState n ss v (is ++ [ir]) ds
+addInstrToStart ir (CodeGenState n ss v is ds so) =
+  CodeGenState n ss v (is ++ [ir]) ds so
 
 addStringConstant :: String -> CodeGenState -> (String, CodeGenState)
-addStringConstant s (CodeGenState n ss v is ds) =
-  (getStringConstantName newStrConst, CodeGenState n ss (v+1) is (newStrConst:ds))
+addStringConstant s (CodeGenState n ss v is ds so) =
+  (getStringConstantName newStrConst, CodeGenState n ss (v+1) is (newStrConst:ds) so)
   where
-    newStrConst = stringConstant v s
+    newStrConst = stringConstant n v s
 
 nextLabel :: CodeGenState -> (String, CodeGenState)
-nextLabel (CodeGenState n ss v is ds) =
-  ("label_" ++ show v, CodeGenState n ss (v+1) is ds)
+nextLabel (CodeGenState n ss v is ds so) =
+  (n ++ "_label_" ++ show v, CodeGenState n ss (v+1) is ds so)
 
 nextSP :: CodeGenState -> (Integer, CodeGenState)
-nextSP (CodeGenState n ss v is ds) =
-  (ss, CodeGenState n (ss+8) v is ds)
+nextSP (CodeGenState n ss v is ds so) =
+  (ss, CodeGenState n (ss+8) v is ds so)
 
 instr :: Instruction -> State CodeGenState ()
 instr ir = do
@@ -96,11 +112,16 @@ freshStackLoc = do
       return $ (-1) * newStackLoc
 
 prettyPrintCode :: CodeGenState -> String
-prettyPrintCode (CodeGenState n ss v instrs dataSegItems) =
+prettyPrintCode (CodeGenState n ss v instrs dataSegItems so) =
   ".text\n.globl _" ++ n ++ "\n_" ++ n ++ ":" ++ (showInstrs $ reverse instrs)  ++ "\n\n.data\n" ++ (L.concat $ L.intersperse "\n" $ L.map show $ dataSegItems) ++ "\n"
 
 startingCodeGenState :: Decl -> CodeGenState
-startingCodeGenState decl = CodeGenState (getFuncName decl) 8 0 [] []
+startingCodeGenState decl = CodeGenState (getFuncName decl) 8 0 [] [] (argumentStackOffsets decl)
+
+argumentStackOffsets :: Decl -> Map String Integer
+argumentStackOffsets decl =
+  let args = getFuncArgs decl in
+  M.fromList $ L.zip args $ L.map (\x -> 8*x + 16) [0..((toInteger $ length args) - 1)]
 
 genExprCode :: Expr -> State CodeGenState ()
 genExprCode e =
@@ -160,7 +181,9 @@ genBoolTestCode e = do
   instr $ js l1
   return l1
 
-genNameCode n = error "genNameCode not implemented"
+genNameCode n = do
+  off <- getStackOffset n
+  instr $ movqIOR off RSP RAX
 
 genFuncallCode n args = error "genFuncallCode not implemented"
 

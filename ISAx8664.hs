@@ -2,6 +2,9 @@ module ISAx8664(Instruction,
                 showInstrs,
                 DataItem,
                 call,
+                leave,
+                ret,
+                enterII,
                 movbIR,
                 movqIR,
                 movqRIO,
@@ -31,9 +34,13 @@ data Instruction
   | Js String
   | Jmp String
   | LabelInstr String
+  | Enter MVal MVal
+  | Leave
+  | Ret
     deriving (Eq, Ord)
 
 instance Show Instruction where
+  show (Enter l r) = "\tenter\t" ++ show l ++ ", " ++ show r
   show (Movb l r) = "\tmovb\t" ++ show l ++ ", " ++ show r
   show (Movq l r) = "\tmovq\t" ++ show l ++ ", " ++ show r
   show (Subq l r) = "\tsubq\t" ++ show l ++ ", " ++ show r
@@ -43,8 +50,13 @@ instance Show Instruction where
   show (Js str) = "\tjs\t" ++ str
   show (Jmp str) = "\tjmp\t" ++ str
   show (LabelInstr str) = str ++ ":"
+  show Leave = "\tleave\t"
+  show Ret = "\tret\t"
 
+leave = Leave
+ret = Ret
 call str = Call str
+enterII il ir = Enter (Immediate il) (Immediate ir)
 movbIR imm r = Movb (Immediate imm) (Register r)
 movqIR imm r = Movq (Immediate imm) (Register r)
 movqIOR imm l r = Movq (Deref (ImmediateOffset imm) l) (Register r)
@@ -107,6 +119,6 @@ data DataItem
 instance Show DataItem where
   show (StringConst l c) = l ++ ":\n\t.asciz " ++ show c ++ "\n"
 
-stringConstant i str = StringConst ("_str_const_" ++ show i) str
+stringConstant prefix i str = StringConst ("_" ++ prefix ++ "_str_const_" ++ show i) str
 
 getStringConstantName (StringConst l _) = l
